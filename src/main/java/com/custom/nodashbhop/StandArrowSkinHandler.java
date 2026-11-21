@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -25,30 +26,56 @@ import java.util.UUID;
 
 /**
  * Grants a configurable chance (default 35%) to roll an alternate Stand skin (1..3)
- * whenever a player obtains a new Stand via a JCraft Stand Arrow.
- * Uses JCraft 0.18.2's real CommonStandComponent.setSkin(int) + sync(Entity),
- * displays ONLY on the hotbar actionbar ("Skin #N - <Skin Name>"), and plays firework sounds!
+ * whenever a player obtains a new Stand via a Stand Arrow OR evolves a Stand using
+ * ANY evolution item (Requiem Arrow, Living Arrow, DIO's Diary, Diary Page, Green Baby,
+ * or Purple Haze Flower evolution).
+ * Displays ONLY on the hotbar actionbar ("Skin #N - <Skin Name>") with firework sounds.
  */
 public class StandArrowSkinHandler {
     private static volatile int altSkinChancePercent = 35;
 
+    private static final Map<UUID, Long> evoWindowEndMs = new HashMap<>();
     private final Map<UUID, String> lastStandId = new HashMap<>();
-    private final Map<UUID, Long> arrowUseWindowEndMs = new HashMap<>();
     private final Random random = new Random();
+
+    public static void markEvoWindow(ServerPlayer player) {
+        if (player != null) {
+            evoWindowEndMs.put(player.getUUID(), System.currentTimeMillis() + 15000L);
+        }
+    }
+
+    private boolean isStandOrEvolutionItem(ServerPlayer player, ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.is(ItemTags.FLOWERS)) {
+            String standId = JCraftStandCheck.getStandId(player);
+            return standId.equals("purple_haze");
+        }
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (itemId == null) return false;
+        String full = itemId.toString().toLowerCase(Locale.ROOT);
+        if (!full.contains("jcraft")) return false;
+        return full.contains("arrow")
+                || full.contains("diary")
+                || full.contains("green_baby")
+                || full.contains("greenbaby")
+                || full.contains("requiem");
+    }
 
     @SubscribeEvent
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (isStandOrEvolutionItem(player, event.getItemStack())) {
+            markEvoWindow(player);
+        }
+    }
 
-        ItemStack stack = event.getItemStack();
-        if (stack.isEmpty()) return;
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        if (itemId == null) return;
-
-        String full = itemId.toString().toLowerCase(Locale.ROOT);
-        if (full.contains("jcraft") && full.contains("arrow")) {
-            arrowUseWindowEndMs.put(player.getUUID(), System.currentTimeMillis() + 15000L);
+    @SubscribeEvent
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (isStandOrEvolutionItem(player, event.getItemStack())) {
+            markEvoWindow(player);
         }
     }
 
@@ -67,26 +94,23 @@ public class StandArrowSkinHandler {
         if (currentStand.equals(previousStand)) return;
         if (!JCraftStandCheck.hasStand(player)) return;
 
-        Long windowEnd = arrowUseWindowEndMs.get(uuid);
+        Long windowEnd = evoWindowEndMs.get(uuid);
         if (windowEnd == null || System.currentTimeMillis() > windowEnd) return;
-        arrowUseWindowEndMs.remove(uuid);
+        evoWindowEndMs.remove(uuid);
 
         if (altSkinChancePercent <= 0) return;
         if (random.nextInt(100) < altSkinChancePercent) {
             int skinIndex = 1 + random.nextInt(3); // Skins 1, 2, or 3
             if (applyStandSkin(player, skinIndex)) {
-                // Build exact JCraft 0.18.2 skin translation key: entity.<ns>.<stand>.info.skin<N>
                 String ns = currentStand.contains(":") ? currentStand.substring(0, currentStand.indexOf(':')) : "jcraft";
                 String slug = currentStand.contains(":") ? currentStand.substring(currentStand.indexOf(':') + 1) : currentStand;
                 slug = slug.toLowerCase(Locale.ROOT).replace("_entity", "").replace("entity", "");
                 String langKey = "entity." + ns + "." + slug + ".info.skin" + skinIndex;
 
-                // Show ONLY on hotbar actionbar (actionBar = true, NO chat message!)
                 Component hotbarMsg = Component.literal("§6Skin #" + skinIndex + " §f- §e")
                         .append(Component.translatable(langKey));
                 player.displayClientMessage(hotbarMsg, true);
 
-                // Play celebratory firework sounds!
                 player.level().playSound(
                         null,
                         player.blockPosition(),
@@ -111,7 +135,7 @@ public class StandArrowSkinHandler {
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID uuid = event.getEntity().getUUID();
         lastStandId.remove(uuid);
-        arrowUseWindowEndMs.remove(uuid);
+        evoWindowEndMs.remove(uuid);
     }
 
     @SubscribeEvent
@@ -123,7 +147,7 @@ public class StandArrowSkinHandler {
                                 .executes(ctx -> {
                                     altSkinChancePercent = IntegerArgumentType.getInteger(ctx, "percent");
                                     ctx.getSource().sendSuccess(
-                                            () -> Component.literal("§a[Server] Tỉ lệ ra Skin Stand khi dùng Mũi Tên: §e" + altSkinChancePercent + "%"),
+                                            () -> Component.literal("§a[Server] Tỉ lệ ra Skin Stand (Mũi Tên & Tiến Hóa): §e" + altSkinChancePercent + "%"),
                                             true
                                     );
                                     return 1;
@@ -143,18 +167,15 @@ public class StandArrowSkinHandler {
         Object standComp = JCraftStandCheck.getStandComponent(player);
         if (standComp == null) return false;
         try {
-            // Exact JCraft 0.18.2 CommonStandComponent.setSkin(int)
             Method setSkin = standComp.getClass().getMethod("setSkin", int.class);
             setSkin.invoke(standComp, skin);
 
-            // Sync component to client via CommonStandComponentImpl.sync(Entity)
             try {
                 Method sync = standComp.getClass().getMethod("sync", Entity.class);
                 sync.invoke(standComp, player);
             } catch (Exception ignored) {
             }
 
-            // Also update currently summoned StandEntity if present
             Object standEntity = JCraftStandCheck.getStandEntity(player);
             if (standEntity != null) {
                 try {

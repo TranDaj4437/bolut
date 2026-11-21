@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Exact JCraft 0.18.2 (+ Silver Chariot Requiem) evolution requirements for evolvable Stands.
+ * Exact JCraft 0.18.2 (+ Silver Chariot Requiem & custom Purple Haze) evolution requirements.
  * Evolved forms, non-evolving Stands, and Specs return null (no RequireEvo line shown).
  */
 public final class StandEvoRegistry {
@@ -46,10 +46,10 @@ public final class StandEvoRegistry {
         put("goldexperience", "Requiem Arrow");
         put("ge", "Requiem Arrow");
 
-        // 8. Purple Haze -> Purple Haze: Distortion
-        put("purple_haze", "Any Flower (5 Kills)");
-        put("purplehaze", "Any Flower (5 Kills)");
-        put("ph", "Any Flower (5 Kills)");
+        // 8. Purple Haze -> Purple Haze: Distortion (custom: 1 Stand User kill + 1 Flower)
+        put("purple_haze", "Flower (1 Stand User Kill)");
+        put("purplehaze", "Flower (1 Stand User Kill)");
+        put("ph", "Flower (1 Stand User Kill)");
 
         // 9. Silver Chariot -> Silver Chariot Requiem (SCR) using JCraft's Requiem Arrow
         put("silver_chariot", "Requiem Arrow");

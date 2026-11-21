@@ -32,6 +32,7 @@ public class NoDashBhopMod {
         CombinedNetwork.register();
         MinecraftForge.EVENT_BUS.register(new NoDashServerHandler());
         MinecraftForge.EVENT_BUS.register(new StandArrowSkinHandler());
+        MinecraftForge.EVENT_BUS.register(new PurpleHazeEvoHandler());
         MinecraftForge.EVENT_BUS.register(new TimeFlightServerHandler());
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
             MinecraftForge.EVENT_BUS.register(new NoDashClientHandler());
