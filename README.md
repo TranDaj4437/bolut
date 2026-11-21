@@ -1,4 +1,4 @@
-# JCraft Merged Mod (`jcraft-nodash-cs2bhop`) — v4.5.0 (Forge 1.20.1)
+# MoreJcraft (by trandaj4437) — v4.8.0 (Forge 1.20.1)
 
 All-in-one custom **Minecraft Forge 1.20.1** (`47.4.28`, Java 17, `mod_id: jcraftnodashbhop`) mod built via GitHub Actions (Gradle 8.8 + JDK 17), designed for **JCraft 0.18.2**, **TaCZ 1.2.0-hotfix**, **Shoulder Surfing Reloaded 5.3.1**, **Third Person Shooting: Zero 6.0.1**, **Custom Crosshair Mod 1.5.5**, and **Silver Chariot Requiem Addon 1.5.3** (+ AzureLib 3.2.9).
 
@@ -44,7 +44,7 @@ All-in-one custom **Minecraft Forge 1.20.1** (`47.4.28`, Java 17, `mod_id: jcraf
   - `Vinegar Crimson` → King Crimson (`skin1`)
   - `Garfield KQ / BTD` → Killer Queen (`skin1`) & Killer Queen: Bites the Dust (`skin1`)
 - **Clean Silver Chariot Requiem Integration (Top-Priority Server Datapack, Auto-Enabled when `jcraft_scr` is present)**:
-  - Keep `jcraft-scr-forge-1.5.3.jar` + `azurelib-neo-1.20.1-3.2.9.jar` in `mods/`.
+  - Bundles `jcraft-scr-forge-1.5.3.jar` automatically via Forge Jar-in-Jar (only requires `azurelib >= 3.1.10`, e.g. `azurelib-neo-1.20.1-3.2.9.jar`, in `mods/`).
   - Automatically disables Rome worldgen, boss spawns, extra chest loot, and Passione Computer crafting — keeping only **Silver Chariot Requiem** (all 4 skins, Stand Discs, and skills).
   - Changes Silver Chariot → Silver Chariot Requiem evolution to use vanilla JCraft's **`jcraft:requiem_arrow`** (`RequireEvo: Requiem Arrow`).
 
@@ -66,5 +66,11 @@ All-in-one custom **Minecraft Forge 1.20.1** (`47.4.28`, Java 17, `mod_id: jcraf
 ## Building via GitHub Actions
 
 1. Upload/push this repository to GitHub (includes `.github/workflows/build.yml`).
-2. Open the **Actions** tab → **Build Forge 1.20.1 Mod** runs automatically on push (JDK 17 + Gradle 8.8).
-3. Download the built `.jar` from the **`jcraft-nodash-cs2bhop-v4.5-1.20.1`** artifact and place it in both client and server `mods/` folders.
+2. Open the **Actions** tab → **Build MoreJcraft (Forge 1.20.1)** runs automatically on push (JDK 17 + Gradle 8.8).
+3. Download the built `.jar` from the **`MoreJcraft-v4.8-1.20.1`** artifact and place it in both client and server `mods/` folders.
+
+---
+
+## Credits
+
+- Created by **trandaj4437** (`by trandaj4437`)

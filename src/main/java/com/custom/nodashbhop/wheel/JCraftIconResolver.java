@@ -157,7 +157,11 @@ public final class JCraftIconResolver {
             ResourceLocation exactNormal = findExactAbilityIcon(rm, namespace, standTokens, fileBase);
             if (exactNormal != null) {
                 data.normalIcon = exactNormal;
-                data.present = true;
+                // Only infer presence from PNG when Stand/Spec is unsummoned (moveMap == null).
+                // When moveMap != null, MoveMap is the sole authority so ghost icons never create empty slices.
+                if (moveMap == null) {
+                    data.present = true;
+                }
             }
 
             if (data.hasCrouchVariant) {

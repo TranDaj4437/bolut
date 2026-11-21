@@ -140,17 +140,30 @@ public class WheelController {
             return active;
         }
 
+        String standId = mc.player != null ? JCraftStandCheck.getStandId(mc.player).toLowerCase(java.util.Locale.ROOT) : "";
         for (int i = 1; i < 8; i++) {
+            if (isSlotRemovedForStand(standId, slots[i].slot)) continue;
             if (slots[i].present) {
                 active.add(slots[i]);
             }
         }
         if (active.isEmpty()) {
             for (int i = 1; i < 8; i++) {
+                if (isSlotRemovedForStand(standId, slots[i].slot)) continue;
                 active.add(slots[i]);
             }
         }
         return active;
+    }
+
+    private boolean isSlotRemovedForStand(String standId, WheelSlot slot) {
+        if (standId.equals("the_sun") && slot == WheelSlot.BARRAGE) {
+            return true;
+        }
+        if (standId.equals("purple_haze") && slot == WheelSlot.UTILITY) {
+            return true;
+        }
+        return false;
     }
 
     /**
