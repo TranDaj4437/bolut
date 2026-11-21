@@ -16,7 +16,7 @@ import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 public final class CombinedNetwork {
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "7";
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(NoDashBhopMod.MOD_ID, "main"),
             () -> PROTOCOL,
@@ -88,6 +88,7 @@ public final class CombinedNetwork {
         private final boolean autoBhop;
         private final boolean scrollJump;
         private final int forceCamMode;
+        private final double camOffsetZ;
         private final double airAccel;
         private final double wishCap;
         private final double maxSpeed;
@@ -100,6 +101,7 @@ public final class CombinedNetwork {
                 boolean autoBhop,
                 boolean scrollJump,
                 int forceCamMode,
+                double camOffsetZ,
                 double airAccel,
                 double wishCap,
                 double maxSpeed,
@@ -111,6 +113,7 @@ public final class CombinedNetwork {
             this.autoBhop = autoBhop;
             this.scrollJump = scrollJump;
             this.forceCamMode = forceCamMode;
+            this.camOffsetZ = camOffsetZ;
             this.airAccel = airAccel;
             this.wishCap = wishCap;
             this.maxSpeed = maxSpeed;
@@ -125,6 +128,7 @@ public final class CombinedNetwork {
                     CS2BhopConfig.autoBhopHoldSpace,
                     CS2BhopConfig.scrollWheelJump,
                     CS2BhopConfig.forceCamMode,
+                    CS2BhopConfig.camOffsetZ,
                     CS2BhopConfig.airAccelerate,
                     CS2BhopConfig.wishSpeedCap,
                     CS2BhopConfig.maxBhopSpeed,
@@ -139,6 +143,7 @@ public final class CombinedNetwork {
             buf.writeBoolean(pkt.autoBhop);
             buf.writeBoolean(pkt.scrollJump);
             buf.writeVarInt(pkt.forceCamMode);
+            buf.writeDouble(pkt.camOffsetZ);
             buf.writeDouble(pkt.airAccel);
             buf.writeDouble(pkt.wishCap);
             buf.writeDouble(pkt.maxSpeed);
@@ -157,6 +162,7 @@ public final class CombinedNetwork {
                     buf.readDouble(),
                     buf.readDouble(),
                     buf.readDouble(),
+                    buf.readDouble(),
                     buf.readDouble()
             );
         }
@@ -169,6 +175,7 @@ public final class CombinedNetwork {
                 CS2BhopConfig.autoBhopHoldSpace = pkt.autoBhop;
                 CS2BhopConfig.scrollWheelJump = pkt.scrollJump;
                 CS2BhopConfig.forceCamMode = pkt.forceCamMode;
+                CS2BhopConfig.camOffsetZ = pkt.camOffsetZ;
                 CS2BhopConfig.airAccelerate = pkt.airAccel;
                 CS2BhopConfig.wishSpeedCap = pkt.wishCap;
                 CS2BhopConfig.maxBhopSpeed = pkt.maxSpeed;

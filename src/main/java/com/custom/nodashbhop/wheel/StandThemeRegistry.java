@@ -65,6 +65,7 @@ public final class StandThemeRegistry {
         put("hamon", 0xFFFBBF24);
         put("brawler", 0xFFFB923C);
         put("anubis", 0xFF2DD4BF);
+        put("ranger", 0xFFD97706);
         put("spin", 0xFF4ADE80);
     }
 

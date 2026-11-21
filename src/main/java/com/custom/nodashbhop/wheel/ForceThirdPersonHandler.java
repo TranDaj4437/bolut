@@ -245,10 +245,13 @@ public class ForceThirdPersonHandler {
                 changed |= setBooleanFieldValue(perspCfg, "isThirdPersonBackEnabled", false);
             }
 
-            // 2. CameraConfig: couple camera to player rotation (like holding a gun)
+            // 2. CameraConfig: couple camera to player rotation & pull camera closer to character
             Object camCfg = invokeNoArg(clientCfg, "getCameraConfig");
             if (camCfg != null) {
                 changed |= setBooleanFieldValue(camCfg, "isCameraDecoupled", false);
+                changed |= setDoubleFieldValue(camCfg, "offsetZ", CS2BhopConfig.camOffsetZ);
+                changed |= setDoubleFieldValue(camCfg, "offsetX", -0.65D);
+                changed |= setDoubleFieldValue(camCfg, "offsetY", 0.15D);
             }
 
             // 3. CrosshairConfig: DYNAMIC crosshair + ALWAYS visible in SHOULDER_SURFING
@@ -289,6 +292,24 @@ public class ForceThirdPersonHandler {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private boolean setDoubleFieldValue(Object holder, String fieldName, double target) {
+        try {
+            Field f = holder.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            Object configVal = f.get(holder);
+            if (configVal == null) return false;
+            Method getM = configVal.getClass().getMethod("get");
+            Object cur = getM.invoke(configVal);
+            if (cur instanceof Number n && Math.abs(n.doubleValue() - target) > 0.01D) {
+                Method setM = configVal.getClass().getMethod("set", Object.class);
+                setM.invoke(configVal, Double.valueOf(target));
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 
     private boolean setBooleanFieldValue(Object holder, String fieldName, boolean target) {

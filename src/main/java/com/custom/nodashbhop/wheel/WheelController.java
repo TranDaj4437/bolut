@@ -9,6 +9,10 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -171,13 +175,66 @@ public class WheelController {
      * - Mandom: Rewind icon (`jcraft:textures/gui/ability_icons/mandom/ult.png`)
      * - All other Stands/Specs: Light Punch (M1) icon
      */
+    private static final ResourceLocation SPEC_ICON_VAMPIRE = new ResourceLocation("jcraft", "textures/item/stone_mask.png");
+    private static final ResourceLocation SPEC_ICON_RANGER = new ResourceLocation("jcraft", "textures/item/holster.png");
+    private static final ResourceLocation SPEC_ICON_BRAWLER = new ResourceLocation("jcraft", "textures/item/boxing_gloves.png");
+    private static final ResourceLocation SPEC_ICON_ANUBIS = new ResourceLocation("jcraft", "textures/item/anubis.png");
+
     public MoveSlotData getCenterHubSlotData() {
+        if (specMode && mc.player != null) {
+            ResourceLocation specHubIcon = resolveSpecCenterIcon(JCraftStandCheck.getSpecId(mc.player));
+            if (specHubIcon != null) {
+                MoveSlotData custom = new MoveSlotData(WheelSlot.LIGHT);
+                custom.present = true;
+                custom.normalIcon = specHubIcon;
+                custom.crouchIcon = specHubIcon;
+                custom.normalName = getActiveEntityDisplayName();
+                return custom;
+            }
+        }
         if (isCurrentMandom()) {
             MoveSlotData rewind = slots[WheelSlot.ULTIMATE.index];
             if (rewind.normalIcon == null) rewind.normalIcon = MANDOM_REWIND_ICON;
             return rewind;
         }
         return slots[WheelSlot.LIGHT.index];
+    }
+
+    /**
+     * Returns the actual JCraft ItemStack to render in the center hub for Vampire, Ranger, Brawler, and Anubis
+     * (renders Anubis's real 3D sword item model cleanly via GuiGraphics.renderItem!).
+     * Returns ItemStack.EMPTY for Hamon and all Stands.
+     */
+    public ItemStack getCenterHubItemStack() {
+        if (!specMode || mc.player == null) return ItemStack.EMPTY;
+        String key = JCraftStandCheck.getSpecId(mc.player).toLowerCase(java.util.Locale.ROOT);
+        ResourceLocation itemId = null;
+        if (key.contains("vampire")) {
+            itemId = new ResourceLocation("jcraft", "stone_mask");
+        } else if (key.contains("ranger")) {
+            itemId = new ResourceLocation("jcraft", "holster");
+        } else if (key.contains("brawler")) {
+            itemId = new ResourceLocation("jcraft", "boxing_gloves");
+        } else if (key.contains("anubis")) {
+            itemId = new ResourceLocation("jcraft", "anubis");
+        }
+        if (itemId != null) {
+            Item item = ForgeRegistries.ITEMS.getValue(itemId);
+            if (item != null && item != Items.AIR) {
+                return new ItemStack(item);
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private ResourceLocation resolveSpecCenterIcon(String specId) {
+        if (specId == null) return null;
+        String key = specId.toLowerCase(java.util.Locale.ROOT);
+        if (key.contains("vampire")) return SPEC_ICON_VAMPIRE;
+        if (key.contains("ranger")) return SPEC_ICON_RANGER;
+        if (key.contains("brawler")) return SPEC_ICON_BRAWLER;
+        if (key.contains("anubis")) return SPEC_ICON_ANUBIS;
+        return null;
     }
 
     public WheelSlot getSelectedWheelSlot() {

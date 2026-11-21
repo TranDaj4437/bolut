@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 
@@ -87,16 +88,25 @@ public final class WheelRenderer {
         int hubRingColor = shiftHeld ? 0xCCF59E0B : (controller.isSpecMode() ? 0xCC34D399 : 0xCC38BDF8);
         drawAnnularSector(pose, centerX, centerY, INNER_RADIUS - 2.0F, INNER_RADIUS, 0.0F, (float) (Math.PI * 2.0), hubRingColor);
 
-        MoveSlotData hubData = controller.getCenterHubSlotData();
-        ResourceLocation centerIcon = hubData != null ? hubData.getDisplayIcon(false) : null;
-        if (centerIcon != null) {
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            gui.blit(centerIcon, centerX - 14, centerY - 14, 0, 0, 28, 28, 28, 28);
+        ItemStack hubItem = controller.getCenterHubItemStack();
+        if (!hubItem.isEmpty()) {
+            pose.pushPose();
+            pose.translate(centerX - 14.0F, centerY - 14.0F, 0.0F);
+            pose.scale(1.75F, 1.75F, 1.0F);
+            gui.renderItem(hubItem, 0, 0);
+            pose.popPose();
         } else {
-            gui.fill(centerX - 10, centerY - 10, centerX + 10, centerY + 10, 0x661E293B);
-            gui.renderOutline(centerX - 10, centerY - 10, 20, 20, hubRingColor);
+            MoveSlotData hubData = controller.getCenterHubSlotData();
+            ResourceLocation centerIcon = hubData != null ? hubData.getDisplayIcon(false) : null;
+            if (centerIcon != null) {
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                gui.blit(centerIcon, centerX - 14, centerY - 14, 0, 0, 28, 28, 28, 28);
+            } else {
+                gui.fill(centerX - 10, centerY - 10, centerX + 10, centerY + 10, 0x661E293B);
+                gui.renderOutline(centerX - 10, centerY - 10, 20, 20, hubRingColor);
+            }
         }
 
         // 3. Draw per-Stand icons, move label, bound keybind underneath move label, and cooldown countdown

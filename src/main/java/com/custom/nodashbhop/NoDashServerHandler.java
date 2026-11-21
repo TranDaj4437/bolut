@@ -65,6 +65,20 @@ public class NoDashServerHandler {
                         return 1;
                     })
                 )
+                .then(Commands.literal("zoom")
+                    .then(Commands.argument("distance", DoubleArgumentType.doubleArg(1.5, 5.0))
+                        .executes(ctx -> {
+                            double dist = DoubleArgumentType.getDouble(ctx, "distance");
+                            CS2BhopConfig.camOffsetZ = dist;
+                            CombinedNetwork.syncAllFromConfig();
+                            ctx.getSource().sendSuccess(
+                                () -> Component.literal(String.format("§a[Server] Khoảng cách camera thứ 3: §e%.2f §7(nhỏ hơn = sát nhân vật hơn, gốc = 4.0).", dist)),
+                                true
+                            );
+                            return 1;
+                        })
+                    )
+                )
                 .then(Commands.literal("status")
                     .executes(ctx -> {
                         MinecraftServer server = ctx.getSource().getServer();

@@ -18,6 +18,7 @@ public final class CS2BhopConfig {
     public static volatile boolean autoBhopHoldSpace = true;
     public static volatile boolean scrollWheelJump = false;
     public static volatile int forceCamMode = CAM_REPLACE;
+    public static volatile double camOffsetZ = 2.65; // Gần nhân vật hơn mặc định 4.0 của Shoulder Surfing
 
     // Thông số BHop CS2 mượt & dễ ăn đà hơn (không ảnh hưởng đi bộ thường)
     public static volatile double airAccelerate = 22.0;
