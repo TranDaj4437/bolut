@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Exact JCraft 0.18.2 evolution requirements for evolvable Stands.
+ * Exact JCraft 0.18.2 (+ Silver Chariot Requiem) evolution requirements for evolvable Stands.
  * Evolved forms, non-evolving Stands, and Specs return null (no RequireEvo line shown).
  */
 public final class StandEvoRegistry {
@@ -50,6 +50,11 @@ public final class StandEvoRegistry {
         put("purple_haze", "Any Flower (5 Kills)");
         put("purplehaze", "Any Flower (5 Kills)");
         put("ph", "Any Flower (5 Kills)");
+
+        // 9. Silver Chariot -> Silver Chariot Requiem (SCR) using JCraft's Requiem Arrow
+        put("silver_chariot", "Requiem Arrow");
+        put("silverchariot", "Requiem Arrow");
+        put("sc", "Requiem Arrow");
     }
 
     private StandEvoRegistry() {}

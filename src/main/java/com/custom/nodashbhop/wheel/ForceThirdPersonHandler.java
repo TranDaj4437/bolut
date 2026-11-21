@@ -17,14 +17,21 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Server-synced Third-Person Camera Controller (/forcecam replace | lock | off):
- * - Mode REPLACE (default): Replaces vanilla THIRD_PERSON_BACK with Shoulder Surfing Reloaded
- *   over-the-shoulder aiming view (decoupled_camera = false, crosshair ALWAYS visible & dynamic
- *   just like holding a TaCZ gun). Players can freely press F5 to switch between 1st-person and
- *   this over-the-shoulder 3rd-person view.
- * - Mode LOCK (/forcecam lock or /forcecam on): Also locks F5 and keeps players in Shoulder Surfing
- *   at all times (still compatible with TaCZ 1.2.0-hotfix ADS / sniper scopes).
- * - Mode OFF (/forcecam off): Disables all camera overrides.
+ * Server-synced Third-Person Camera Controller (/forcecam replace | lock | off)
+ * Verified against ShoulderSurfing-Forge-1.20.1-5.3.1, TaCZ 1.2.0-hotfix, and Third Person Shooting: Zero 6.0.1.
+ *
+ * - Mode REPLACE (default):
+ *   1. Completely removes/replaces vanilla THIRD_PERSON_BACK with Shoulder Surfing over-the-shoulder view:
+ *      PerspectiveConfig.isThirdPersonReplaced = true, isThirdPersonBackEnabled = false
+ *   2. Makes Shoulder Surfing feel like holding a gun with crosshair at all times:
+ *      CameraConfig.isCameraDecoupled = false
+ *      CrosshairConfig.crosshairType = DYNAMIC
+ *      CrosshairConfig.crosshairVisibility[SHOULDER_SURFING] = ALWAYS
+ *   3. Players can still freely press F5 to switch between 1st-person and over-the-shoulder 3rd-person.
+ * - Mode LOCK (/forcecam lock | /forcecam on):
+ *   Also locks F5 and keeps players in Shoulder Surfing (still compatible with TaCZ ADS / scopes).
+ * - Mode OFF (/forcecam off):
+ *   Disables all camera overrides.
  */
 public class ForceThirdPersonHandler {
     private int configCheckTicker = 0;
@@ -64,10 +71,7 @@ public class ForceThirdPersonHandler {
         LocalPlayer player = mc.player;
         if (player == null || mc.options == null || player.isSpectator()) return;
 
-        // Periodically apply Shoulder Surfing Reloaded 4.x / 5.x settings:
-        // - replace_default_perspective = true (removes vanilla 3rd-person back)
-        // - decoupled_camera = false (character rotates with crosshair like gun aiming)
-        // - crosshair_type = DYNAMIC + shoulder_surfing visibility = ALWAYS
+        // Periodically enforce Shoulder Surfing Reloaded 5.3.1 config values live
         if (configCheckTicker <= 0) {
             enforceShoulderSurfingGunStyleConfig();
             configCheckTicker = 20;
@@ -75,13 +79,12 @@ public class ForceThirdPersonHandler {
             configCheckTicker--;
         }
 
-        // Never interfere while aiming down sights (ADS / Scope) with TaCZ 1.2.0-hotfix guns
+        // Never fight TaCZ 1.2.0-hotfix ADS / Scope camera
         if (isTaCZAiming(player)) {
             return;
         }
 
         if (mode == CS2BhopConfig.CAM_LOCK) {
-            // Consume F5 clicks while locked
             KeyMapping togglePersp = mc.options.keyTogglePerspective;
             if (togglePersp != null) {
                 togglePersp.setDown(false);
@@ -94,8 +97,8 @@ public class ForceThirdPersonHandler {
                 }
             }
         } else if (mode == CS2BhopConfig.CAM_REPLACE) {
-            // Allow F5 freely between 1st-person & Shoulder Surfing,
-            // but intercept vanilla THIRD_PERSON_BACK whenever Shoulder Surfing isn't active.
+            // Allow F5 freely, but if camera ever lands on vanilla THIRD_PERSON_BACK
+            // while Shoulder Surfing is not active, immediately switch to SHOULDER_SURFING.
             if (mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK && !isCurrentlyShoulderSurfing()) {
                 enforceShoulderSurfingPerspective();
             }
@@ -103,7 +106,7 @@ public class ForceThirdPersonHandler {
     }
 
     /**
-     * Checks if the local player is currently aiming down sights (ADS) with a TaCZ 1.2.0 gun.
+     * Checks if the local player is currently aiming down sights (ADS) with a TaCZ 1.2.0-hotfix gun.
      */
     private boolean isTaCZAiming(LocalPlayer player) {
         try {
@@ -150,8 +153,8 @@ public class ForceThirdPersonHandler {
 
     private Object getShoulderSurfingInstance() {
         String[] ssClasses = {
-                "com.github.exopandora.shouldersurfing.api.client.ShoulderSurfing",
-                "com.github.exopandora.shouldersurfing.client.ShoulderSurfingImpl"
+                "com.github.exopandora.shouldersurfing.api.client.IShoulderSurfing",
+                "com.github.exopandora.shouldersurfing.api.client.ShoulderSurfing"
         };
         for (String clsName : ssClasses) {
             try {
@@ -177,7 +180,7 @@ public class ForceThirdPersonHandler {
     }
 
     /**
-     * Switches to Shoulder Surfing Reloaded 4.x / 5.x SHOULDER_SURFING perspective via reflection.
+     * Switches to Shoulder Surfing Reloaded 5.x SHOULDER_SURFING perspective via reflection.
      */
     private boolean enforceShoulderSurfingPerspective() {
         Object inst = getShoulderSurfingInstance();
@@ -206,7 +209,7 @@ public class ForceThirdPersonHandler {
                     }
                 }
                 try {
-                    Method toggle = inst.getClass().getMethod("toggleShoulderSurfing");
+                    Method toggle = inst.getClass().getMethod("togglePerspective");
                     toggle.invoke(inst);
                     return true;
                 } catch (Exception ignored) {
@@ -219,114 +222,105 @@ public class ForceThirdPersonHandler {
     }
 
     /**
-     * Configures Shoulder Surfing Reloaded 4.x / 5.x live in memory so 3rd-person feels like
-     * holding a gun with crosshair at all times:
-     * - replace_default_perspective = true (replaces vanilla 3rd-person back)
-     * - decoupled_camera = false (player turns with crosshair)
-     * - crosshair_type = DYNAMIC (aim-tracked crosshair like gun TPS)
-     * - crosshair visibility for SHOULDER_SURFING = ALWAYS
+     * Directly configures Shoulder Surfing Reloaded 5.3.1 Config.CLIENT:
+     * - perspectiveConfig.isThirdPersonReplaced = true
+     * - perspectiveConfig.isThirdPersonBackEnabled = false
+     * - cameraConfig.isCameraDecoupled = false
+     * - crosshairConfig.crosshairType = CrosshairType.DYNAMIC
+     * - crosshairConfig.crosshairVisibility[Perspective.SHOULDER_SURFING] = CrosshairVisibility.ALWAYS
      */
     private void enforceShoulderSurfingGunStyleConfig() {
-        String[] configClasses = {
-                "com.github.exopandora.shouldersurfing.config.Config",
-                "com.github.exopandora.shouldersurfing.client.config.ClientConfig"
-        };
-        for (String clsName : configClasses) {
-            try {
-                Class<?> cfgCls = Class.forName(clsName);
-                Object clientCfg = null;
-                try {
-                    Field clientField = cfgCls.getField("CLIENT");
-                    clientCfg = clientField.get(null);
-                } catch (Exception ignored) {
-                }
-                if (clientCfg == null) continue;
+        try {
+            Class<?> cfgCls = Class.forName("com.github.exopandora.shouldersurfing.config.Config");
+            Field clientField = cfgCls.getField("CLIENT");
+            Object clientCfg = clientField.get(null);
+            if (clientCfg == null) return;
 
-                applyConfigOnObject(clientCfg, 0);
-            } catch (Exception ignored) {
+            boolean changed = false;
+
+            // 1. PerspectiveConfig: replace & disable vanilla THIRD_PERSON_BACK
+            Object perspCfg = invokeNoArg(clientCfg, "getPerspectiveConfig");
+            if (perspCfg != null) {
+                changed |= setBooleanFieldValue(perspCfg, "isThirdPersonReplaced", true);
+                changed |= setBooleanFieldValue(perspCfg, "isThirdPersonBackEnabled", false);
             }
-        }
-    }
 
-    private void applyConfigOnObject(Object obj, int depth) {
-        if (obj == null || depth > 2) return;
-        for (Field f : obj.getClass().getDeclaredFields()) {
-            String fn = f.getName().toLowerCase(Locale.ROOT);
-            try {
-                f.setAccessible(true);
-                Object valObj = f.get(obj);
-                if (valObj == null) continue;
+            // 2. CameraConfig: couple camera to player rotation (like holding a gun)
+            Object camCfg = invokeNoArg(clientCfg, "getCameraConfig");
+            if (camCfg != null) {
+                changed |= setBooleanFieldValue(camCfg, "isCameraDecoupled", false);
+            }
 
-                // 1. decoupled_camera = false
-                if (fn.contains("decoupled")) {
-                    setBooleanConfigValue(valObj, false);
-                }
-                // 2. replace_default_perspective = true
-                else if (fn.contains("replacedefaultperspective") || fn.contains("replace_default_perspective")) {
-                    setBooleanConfigValue(valObj, true);
-                }
-                // 3. crosshair_type = DYNAMIC
-                else if (fn.equals("crosshairtype") || fn.equals("crosshair_type")) {
-                    setEnumConfigValue(valObj, "DYNAMIC");
-                }
-                // 4. crosshairVisibility map (Perspective -> ConfigValue<CrosshairVisibility>)
-                else if (fn.contains("crosshairvisibility") || fn.contains("crosshair_visibility")) {
-                    if (valObj instanceof Map<?, ?> map) {
+            // 3. CrosshairConfig: DYNAMIC crosshair + ALWAYS visible in SHOULDER_SURFING
+            Object crossCfg = invokeNoArg(clientCfg, "getCrosshairConfig");
+            if (crossCfg != null) {
+                changed |= setEnumFieldValue(crossCfg, "crosshairType", "DYNAMIC");
+                try {
+                    Field visField = crossCfg.getClass().getDeclaredField("crosshairVisibility");
+                    visField.setAccessible(true);
+                    Object visMap = visField.get(crossCfg);
+                    if (visMap instanceof Map<?, ?> map) {
                         for (Map.Entry<?, ?> entry : map.entrySet()) {
                             if (entry.getKey() != null && entry.getKey().toString().equalsIgnoreCase("SHOULDER_SURFING")) {
-                                setEnumConfigValue(entry.getValue(), "ALWAYS");
+                                changed |= setEnumConfigValue(entry.getValue(), "ALWAYS");
                             }
                         }
-                    } else {
-                        applyConfigOnObject(valObj, depth + 1);
                     }
+                } catch (Exception ignored) {
                 }
-                // 5. direct shoulderSurfing visibility field inside a sub-config
-                else if (depth > 0 && (fn.contains("shouldersurfing") || fn.contains("shoulder_surfing"))) {
-                    setEnumConfigValue(valObj, "ALWAYS");
-                }
-                // 6. Recurse into nested Shoulder Surfing config holder classes
-                else if (valObj.getClass().getName().contains("shouldersurfing") && !valObj.getClass().isEnum()) {
-                    applyConfigOnObject(valObj, depth + 1);
-                }
-            } catch (Exception ignored) {
             }
-        }
 
-        // Also check direct setter methods on ClientConfig
-        for (Method m : obj.getClass().getMethods()) {
-            String mn = m.getName().toLowerCase(Locale.ROOT);
-            try {
-                if (mn.contains("decoupled") && mn.startsWith("set") && m.getParameterCount() == 1) {
-                    Class<?> pt = m.getParameterTypes()[0];
-                    if (pt == boolean.class || pt == Boolean.class) {
-                        m.invoke(obj, false);
-                    }
-                } else if (mn.contains("replacedefaultperspective") && mn.startsWith("set") && m.getParameterCount() == 1) {
-                    Class<?> pt = m.getParameterTypes()[0];
-                    if (pt == boolean.class || pt == Boolean.class) {
-                        m.invoke(obj, true);
-                    }
+            // Save config if any value was updated
+            if (changed) {
+                try {
+                    Method saveM = clientCfg.getClass().getMethod("save");
+                    saveM.invoke(clientCfg);
+                } catch (Exception ignored) {
                 }
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    private void setBooleanConfigValue(Object configVal, boolean target) {
-        try {
-            Method getM = configVal.getClass().getMethod("get");
-            Object cur = getM.invoke(configVal);
-            if (cur instanceof Boolean b && b != target) {
-                Method setM = configVal.getClass().getMethod("set", Object.class);
-                setM.invoke(configVal, Boolean.valueOf(target));
             }
         } catch (Exception ignored) {
         }
     }
 
-    private void setEnumConfigValue(Object configVal, String targetEnumName) {
-        if (configVal == null) return;
+    private Object invokeNoArg(Object target, String methodName) {
+        try {
+            Method m = target.getClass().getMethod(methodName);
+            return m.invoke(target);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private boolean setBooleanFieldValue(Object holder, String fieldName, boolean target) {
+        try {
+            Field f = holder.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            Object configVal = f.get(holder);
+            if (configVal == null) return false;
+            Method getM = configVal.getClass().getMethod("get");
+            Object cur = getM.invoke(configVal);
+            if (cur instanceof Boolean b && b != target) {
+                Method setM = configVal.getClass().getMethod("set", Object.class);
+                setM.invoke(configVal, Boolean.valueOf(target));
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private boolean setEnumFieldValue(Object holder, String fieldName, String targetEnumName) {
+        try {
+            Field f = holder.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return setEnumConfigValue(f.get(holder), targetEnumName);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean setEnumConfigValue(Object configVal, String targetEnumName) {
+        if (configVal == null) return false;
         try {
             Method getM = configVal.getClass().getMethod("get");
             Object cur = getM.invoke(configVal);
@@ -338,7 +332,7 @@ public class ForceThirdPersonHandler {
                             if (c.toString().equalsIgnoreCase(targetEnumName)) {
                                 Method setM = configVal.getClass().getMethod("set", Object.class);
                                 setM.invoke(configVal, c);
-                                return;
+                                return true;
                             }
                         }
                     }
@@ -346,5 +340,6 @@ public class ForceThirdPersonHandler {
             }
         } catch (Exception ignored) {
         }
+        return false;
     }
 }
